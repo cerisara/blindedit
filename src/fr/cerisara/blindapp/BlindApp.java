@@ -6,15 +6,21 @@ import android.os.Bundle;
 import android.view.View;
 import android.content.Context;
 import android.app.Activity;
+import java.util.ArrayList;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.PrintWriter;
 
 public class BlindApp extends Activity {
 
     private String fromshare = null;
+    private TTS tts;
     public static BlindApp main = null;
     private GUI gui = new GUI(this);
     private final String[] menuitems = {
-        "tts"
+        ""
     };
+    private ArrayList<String> txt = new ArrayList<String>();
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -26,7 +32,9 @@ public class BlindApp extends Activity {
         fromshare = null;
         if (in.getAction().equals(Intent.ACTION_SEND)) getNewStringFromShareMenu(in);
 
-        menu();
+        tts = new TTS();
+        showedit();
+        // menu();
     }
 
     @Override
@@ -47,6 +55,14 @@ public class BlindApp extends Activity {
         }
     }
 
+    private void showedit() {
+        gui.setEdit(new GUI.StringListener() {
+            public void enterPressed(String s) {
+                gotNewLine(s);
+            }
+        });
+    }
+
     private void msg(final String s) {
         main.runOnUiThread(new Runnable() {
             public void run() {
@@ -55,8 +71,39 @@ public class BlindApp extends Activity {
         });
     }
 
+    private void gotNewLine(String s) {
+        if (s.startsWith("aa")) {
+            // this is a command
+            if (s.startsWith("aapush")) {
+                tts.speak("pushing to git");
+                // TODO
+            } else if (s.startsWith("aadel")) {
+                tts.speak("del last string");
+                if (txt.size()>0) {
+                    txt.remove(txt.size()-1);
+                }
+            }
+        } else {
+            // it's a text
+            tts.speak(s);
+            txt.add(s);
+            saveAppend(s);
+        }
+    }
+
+    private void saveAppend(String s) {
+        try {
+            File d = getExternalCacheDir();
+            File f = new File(d+"/texts.txt");
+            PrintWriter ff = new PrintWriter(new FileWriter(f, true));
+            ff.println(s);
+            ff.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     private void tts() {
-        TTS tts = new TTS();
         // TODO: shutdown
     }
 
@@ -65,9 +112,6 @@ public class BlindApp extends Activity {
         gui.setList(menuitems,new GUI.ItemListener() {
             public void itemClicked(int num) {
                 switch(num) {
-                    case 0:
-                        tts();
-                        break;
                     default:
                         break;
                 }
